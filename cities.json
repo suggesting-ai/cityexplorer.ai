@@ -1,0 +1,24 @@
+{
+    "Berlin": {
+      "population": 3645000,
+      "center": {"lat": 52.5200, "lng": 13.4050},
+      "attractions": [
+        {"name": "Brandenburger Tor", "lat": 52.5163, "lng": 13.3777},
+        {"name": "East Side Gallery", "lat": 52.5050, "lng": 13.4397},
+        {"name": "Reichstagsgebäude", "lat": 52.5186, "lng": 13.3762},
+        {"name": "Checkpoint Charlie", "lat": 52.5075, "lng": 13.3903},
+        {"name": "Museumsinsel", "lat": 52.5169, "lng": 13.4010}
+      ]
+    },
+    "München": {
+      "population": 1471508,
+      "center": {"lat": 48.1351, "lng": 11.5820},
+      "attractions": [
+        {"name": "Marienplatz", "lat": 48.1374, "lng": 11.5755},
+        {"name": "Englischer Garten", "lat": 48.1642, "lng": 11.6056},
+        {"name": "BMW Welt", "lat": 48.1769, "lng": 11.5558},
+        {"name": "Olympiapark", "lat": 48.1731, "lng": 11.5517},
+        {"name": "Deutsches Museum", "lat": 48.1298, "lng": 11.5833}
+      ]
+    }
+  }

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI City Explorer</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6200ee;
+            --secondary-color: #03dac6;
+            --background-color: #121212;
+            --surface-color: #1e1e1e;
+            --on-surface-color: #ffffff;
+            --on-primary-color: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--background-color);
+            color: var(--on-surface-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: var(--secondary-color);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--on-surface-color);
+            opacity: 0.7;
+        }
+
+        .tour-form {
+            background-color: var(--surface-color);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .interest-checkbox #checkbox{
+            border: 1.6px solid #03dac6;
+            background: none;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        input, select {
+            padding: 0.75rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--on-surface-color);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--secondary-color);
+        }
+
+        .interests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .interest-checkbox {
+            display: flex;
+            align-items: center;
+        }
+
+        .interest-checkbox input {
+            margin-right: 0.5rem;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: var(--on-primary-color);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button:hover {
+            background-color: #7c4dff;
+            transform: translateY(-2px);
+        }
+
+        button i {
+            margin-right: 0.5rem;
+        }
+
+        #tour-result {
+            margin-top: 2rem;
+            background-color: var(--surface-color);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        #tour-result h2 {
+            color: var(--secondary-color);
+            margin-bottom: 1rem;
+        }
+
+        #tour-list {
+            list-style-type: none;
+            margin-bottom: 1rem;
+        }
+
+        #tour-list li {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+        }
+
+        #tour-list li h3 {
+            color: var(--secondary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        #tour-list li p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        #map {
+            height: 400px;
+            width: 100%;
+            margin-top: 1rem;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .loading {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--secondary-color);
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI City Explorer</h1>
+            <p class="subtitle">Entdecken Sie Städte mit KI-gestützten personalisierten Touren</p>
+        </header>
+
+        <main>
+            <form class="tour-form" id="tour-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="city">Stadt</label>
+                        <input type="text" id="city" name="city" required placeholder="z.B. Berlin, Paris, Tokyo">
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Aktueller Standort</label>
+                        <input type="text" id="location" name="location" required placeholder="z.B. Hauptbahnhof">
+                    </div>
+                    <div class="form-group">
+                        <label for="duration">Verfügbare Zeit (in Stunden)</label>
+                        <input type="number" id="duration" name="duration" min="1" max="24" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Interessen</label>
+                    <div class="interests-grid">
+                        <div class="interest-checkbox">
+                            <input type="checkbox" id="history" name="interests" value="history">
+                            <label for="history">Geschichte</label>
+                        </div>
+                        <div class="interest-checkbox">
+                            <input type="checkbox" id="art" name="interests" value="art">
+                            <label for="art">Kunst</label>
+                        </div>
+                        <div class="interest-checkbox">
+                            <input type="checkbox" id="food" name="interests" value="food">
+                            <label for="food">Essen</label>
+                        </div>
+                        <div class="interest-checkbox">
+                            <input type="checkbox" id="nature" name="interests" value="nature" >
+                            <label for="nature">Natur</label>
+                        </div>
+                        <div class="interest-checkbox">
+                            <input type="checkbox" id="architecture" name="interests"value="architecture">
+                            <label for="architecture">Architektur</label>
+                        </div>
+                        <div class="interest-checkbox">
+                            <input type="checkbox" id="shopping" name="interests" value="shopping" >
+                            <label for="shopping">Shopping</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit"><i class="fas fa-robot"></i> Tour generieren</button>
+            </form>
+
+            <div id="tour-result" style="display: none;">
+                <h2>Ihre personalisierte Stadttour</h2>
+                <ul id="tour-list"></ul>
+                <div id="map"></div>
+            </div>
+        </main>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <script>
+        // Erweiterte Stadtdaten
+        const cities = {
+            "Berlin": {
+                population: 3645000,
+                center: {lat: 52.5200, lng: 13.4050},
+                attractions: [
+                    {name: "Brandenburger Tor", lat: 52.5163, lng: 13.3777, description: "Das Brandenburger Tor ist Berlins bekanntestes Wahrzeichen und ein Symbol für die deutsche Einheit."},
+                    {name: "East Side Gallery", lat: 52.5050, lng: 13.4397, description: "Die East Side Gallery ist eine internationale Gedenkstätte für Freiheit und die längste zusammenhängende Galerie der Welt."},
+                    {name: "Reichstagsgebäude", lat: 52.5186, lng: 13.3762, description: "Das Reichstagsgebäude ist Sitz des Deutschen Bundestages und ein bedeutendes historisches Gebäude."},
+                    {name: "Checkpoint Charlie", lat: 52.5075, lng: 13.3903, description: "Checkpoint Charlie war der bekannteste Grenzübergang zwischen Ost- und West-Berlin während des Kalten Krieges."},
+                    {name: "Museumsinsel", lat: 52.5169, lng: 13.4010, description: "Die Museumsinsel beherbergt fünf weltberühmte Museen und ist UNESCO-Weltkulturerbe."}
+                ]
+            },
+            "München": {
+                population: 1471508,
+                center: {lat: 48.1351, lng: 11.5820},
+                attractions: [
+                    {name: "Marienplatz", lat: 48.1374, lng: 11.5755, description: "Der Marienplatz ist das Herz der Münchner Altstadt und bekannt für das Neue Rathaus mit seinem Glockenspiel."},
+                    {name: "Englischer Garten", lat: 48.1642, lng: 11.6056, description: "Der Englische Garten ist einer der größten innerstädtischen Parks der Welt und ein beliebtes Naherholungsgebiet."},
+                    {name: "BMW Welt", lat: 48.1769, lng: 11.5558, description: "Die BMW Welt ist ein Ausstellungs-, Auslieferungs-, Erlebnis- und Museumskomplex des Automobilherstellers BMW."},
+                    {name: "Olympiapark", lat: 48.1731, lng: 11.5517, description: "Der Olympiapark wurde für die Olympischen Spiele 1972 errichtet und ist heute ein beliebtes Freizeitzentrum."},
+                    {name: "Deutsches Museum", lat: 48.1298, lng: 11.5833, description: "Das Deutsche Museum ist das größte Wissenschafts- und Technikmuseum der Welt."}
+                ]
+            },
+            "Milano": {
+                population: 1396059,
+                center: {lat: 45.4642, lng: 9.1900},
+                attractions: [
+                    {name: "Mailänder Dom", lat: 45.4641, lng: 9.1919, description: "Der Mailänder Dom ist eine der größten Kirchen der Welt und das Wahrzeichen der Stadt."},
+                    {name: "Galleria Vittorio Emanuele II", lat: 45.4659, lng: 9.1900, description: "Die Galleria ist eine der ältesten überdachten Einkaufspassagen und ein Wahrzeichen Mailands."},
+                    {name: "Castello Sforzesco", lat: 45.4704, lng: 9.1791, description: "Das Castello Sforzesco ist eine Festungsanlage aus dem 15. Jahrhundert und beherbergt heute mehrere Museen."},
+                    {name: "Santa Maria delle Grazie", lat: 45.4658, lng: 9.1709, description: "In dieser Kirche befindet sich Leonardo da Vincis berühmtes Wandgemälde 'Das Abendmahl'."},
+                    {name: "Pinacoteca di Brera", lat: 45.4720, lng: 9.1880, description: "Die Pinacoteca di Brera ist eine der bedeutendsten Gemäldegalerien Italiens."}
+                ]
+            },
+            "Venedig": {
+                population: 261905,
+                center: {lat: 45.4408, lng: 12.3155},
+                attractions: [
+                    {name: "Markusplatz", lat: 45.4341, lng: 12.3388, description: "Der Markusplatz ist das Herzstück Venedigs und einer der bekanntesten Plätze der Welt."},
+                    {name: "Dogenpalast", lat: 45.4337, lng: 12.3401, description: "Der Dogenpalast war einst Sitz der Regierung der Republik Venedig und ist heute ein Museum."},
+                    {name: "Rialtobrücke", lat: 45.4381, lng: 12.3358, description: "Die Rialtobrücke ist die älteste und bekannteste der vier Brücken über den Canal Grande."},
+                    {name: "Basilica di Santa Maria della Salute", lat: 45.4309, lng: 12.3347, description: "Diese barocke Kirche ist eines der markantesten Bauwerke am Eingang zum Canal Grande."},
+                    {name: "Peggy Guggenheim Collection", lat: 45.4309, lng: 12.3327, description: "Dieses Museum beherbergt eine bedeutende Sammlung moderner Kunst."}
+                ]
+            },
+            "Paris": {
+                population:  2175601,
+                center: {lat: 48.8566, lng: 2.3522},
+                attractions: [
+                    {name: "Eiffelturm", lat: 48.8584, lng: 2.2945, description: "Der Eiffelturm ist das Wahrzeichen von Paris und eines der bekanntesten Bauwerke der Welt."},
+                    {name: "Louvre", lat: 48.8606, lng: 2.3376, description: "Der Louvre ist das größte Kunstmuseum der Welt und beherbergt die Mona Lisa."},
+                    {name: "Notre-Dame", lat: 48.8530, lng: 2.3499, description: "Die Kathedrale Notre-Dame ist eines der finest Beispiele französischer gotischer Architektur."},
+                    {name: "Arc de Triomphe", lat: 48.8738, lng: 2.2950, description: "Der Triumphbogen ehrt diejenigen, die für Frankreich gekämpft und gestorben sind."},
+                    {name: "Sacré-Cœur", lat: 48.8867, lng: 2.3431, description: "Die Basilika Sacré-Cœur bietet einen atemberaubenden Blick über Paris."}
+                ]
+            },
+            "Marseille": {
+                population: 870018,
+                center: {lat: 43.2965, lng: 5.3698},
+                attractions: [
+                    {name: "Vieux-Port", lat: 43.2951, lng: 5.3740, description: "Der Alte Hafen ist das historische und kulturelle Zentrum von Marseille."},
+                    {name: "Notre-Dame de la Garde", lat: 43.2840, lng: 5.3710, description: "Diese Basilika bietet einen spektakulären Blick über die Stadt und das Mittelmeer."},
+                    {name: "MuCEM", lat: 43.2969, lng: 5.3614, description: "Das Museum der Zivilisationen Europas und des Mittelmeers ist ein modernes Kulturzentrum."},
+                    {name: "Parc national des Calanques", lat: 43.2181, lng: 5.4307, description: "Dieser Nationalpark bietet atemberaubende Küstenlandschaften und Wandermöglichkeiten."},
+                    {name: "Le Panier", lat: 43.2988, lng: 5.3688, description: "Das älteste Viertel von Marseille ist bekannt für seine engen Gassen und Kunsthandwerksläden."}
+                ]
+            },
+            "Tokyo": {
+                population: 13929286,
+                center: {lat: 35.6762, lng: 139.6503},
+                attractions: [
+                    {name: "Senso-ji Tempel", lat: 35.7147, lng: 139.7967, description: "Der Senso-ji ist Tokyos ältester buddhistischer Tempel und ein wichtiges kulturelles Zentrum."},
+                    {name: "Tokyo Skytree", lat: 35.7100, lng: 139.8107, description: "Der Tokyo Skytree ist der höchste Fernsehturm der Welt und bietet atemberaubende Aussichten."},
+                    {name: "Shibuya Crossing", lat: 35.6595, lng: 139.7004, description: "Die Shibuya-Kreuzung ist eine der belebtesten Fußgängerkreuzungen der Welt."},
+                    {name: "Meiji-Schrein", lat: 35.6764, lng: 139.6993, description: "Der Meiji-Schrein ist Japans wichtigster Shinto-Schrein und eine Oase der Ruhe inmitten der Großstadt."},
+                    {name: "Tsukiji Outer Market", lat: 35.6654, lng: 139.7707, description: "Der Tsukiji Outer Market ist bekannt für seine Vielfalt an frischen Meeresfrüchten und japanischen Spezialitäten."}
+                ]
+            }
+        };
+
+        // Simuliertes CNN-Modell
+        function simulateCNN(input) {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    const numAttractions = Math.min(Math.floor(input.duration / 2) + 1, 5);
+                    const attractionIndices = [];
+                    while (attractionIndices.length < numAttractions) {
+                        const index = Math.floor(Math.random() * 5);
+                        if (!attractionIndices.includes(index)) {
+                            attractionIndices.push(index);
+                        }
+                    }
+                    resolve(attractionIndices);
+                }, 2000); // Simuliere eine 2-sekündige Verarbeitungszeit
+            });
+        }
+
+        document.getElementById('tour-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const city = document.getElementById('city').value;
+            const location = document.getElementById('location').value;
+            const duration = parseInt(document.getElementById('duration').value);
+            const interests = Array.from(document.querySelectorAll('input[name="interests"]:checked')).map(el => el.value);
+
+            if (!city || !location || isNaN(duration) || duration < 1 || duration > 24 || interests.length === 0) {
+                alert('Bitte füllen Sie alle Felder aus und wählen Sie mindestens ein Interesse.');
+                return;
+            }
+
+            // Zeige Ladeanimation
+            document.getElementById('loading').style.display = 'flex';
+
+            try {
+                const cityData = cities[city];
+                if (!cityData) {
+                    throw new Error('Stadt nicht gefunden');
+                }
+
+                const input = {
+                    population: cityData.population / 1000000,
+                    duration: duration,
+                    interests: interests
+                };
+
+                const tourIndices = await simulateCNN(input);
+                const tour = {
+                    center: cityData.center,
+                    stops: tourIndices.map(index => cityData.attractions[index])
+                };
+
+                const tourList = document.getElementById('tour-list');
+                tourList.innerHTML = '';
+                tour.stops.forEach(stop => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<h3>${stop.name}</h3><p>${stop.description}</p>`;
+                    tourList.appendChild(li);
+                });
+
+                document.getElementById('tour-result').style.display = 'block';
+
+                // Karte initialisieren
+                const map = L.map('map').setView([tour.center.lat, tour.center.lng], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+
+                // Marker für jeden Stopp hinzufügen
+                tour.stops.forEach(stop => {
+                    L.marker([stop.lat, stop.lng]).addTo(map)
+                        .bindPopup(`<b>${stop.name}</b><br>${stop.description}`);
+                });
+            } catch (error) {
+                console.error('Fehler beim Generieren der Tour:', error);
+                alert('Es gab einen Fehler beim Generieren der Tour. Bitte versuchen Sie es später erneut.');
+            } finally {
+                // Verstecke Ladeanimation
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

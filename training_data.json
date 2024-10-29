@@ -1,0 +1,28 @@
+[
+    {
+      "population": 3645000,
+      "duration": 4,
+      "interests": {
+        "history": true,
+        "art": true,
+        "food": false,
+        "nature": false,
+        "architecture": true,
+        "shopping": false
+      },
+      "tour": [1, 0, 1, 1, 0]
+    },
+    {
+      "population": 1471508,
+      "duration": 6,
+      "interests": {
+        "history": false,
+        "art": false,
+        "food": true,
+        "nature": true,
+        "architecture": false,
+        "shopping": true
+      },
+      "tour": [0, 1, 0, 1, 1]
+    }
+  ]
